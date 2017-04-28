@@ -35,7 +35,7 @@ class Player
         int linkCount = int.Parse(inputs[1]); // the number of links
         int gatewayCount = int.Parse(inputs[2]); // the number of exit gateways
         
-        Link[] links = new Link[linkCount];
+        List<Link> links = new List<Link> ();
         int[] gateways = new int[gatewayCount];
         
         for (int i = 0; i < linkCount; i++)
@@ -43,7 +43,7 @@ class Player
             inputs = Console.ReadLine().Split(' ');
             int N1 = int.Parse(inputs[0]); // N1 and N2 defines a link between these nodes
             int N2 = int.Parse(inputs[1]);
-            links[i] = new Link(N1, N2);
+            links.Add(new Link(N1, N2));
         }
         
         for (int i = 0; i < gatewayCount; i++)
@@ -63,39 +63,50 @@ class Player
             while (frontier.Count > 0){
                 int thisNode = frontier.Dequeue();
                 //Find Neighbours and add to the frontier what has not been visited yet
-                for (int i = 0; i < links.Length; i++){
-                    int[] neighbours;
-                    if (links[i].TryGetNeighbours(thisNode, out neighbours)){
-                        foreach (int neighbour in neighbours){
-                            if (!cameFrom.ContainsKey(neighbour)){
-                                frontier.Enqueue(neighbour);
-                                cameFrom[neighbour]=thisNode;
-                            }
-                        }
+                for (int i = 0; i < links.Count(); i++){
+                    int next;
+                    if (links[i].TryLink (thisNode, out next)){
+                        if (!cameFrom.ContainsKey(next)){
+                            frontier.Enqueue(next);
+                            cameFrom[next]=thisNode;
+                        }                        
                     }
                 }
             }
             
             //Reverse Path so we can find the agent from the goal.
-
             int[] shortestPath = new int[0];
             for (int i = 0; i < gatewayCount; i++){
                 List<int> thisPath = new List<int>();
                 int current = gateways[i];
                 thisPath.Add(current);
+                bool pathExists = true;
                 while (current != agentNode){
-                    current = cameFrom[current];
-                    thisPath.Add(current);
+                    if (cameFrom.ContainsKey(current)){
+                        Console.Error.WriteLine("Path[{0}]: {1}", i, cameFrom[current]);
+                        current = cameFrom[current];
+                        thisPath.Add(current);
+                    } else{
+                        pathExists = false;
+                        break;
+                    }
                 }
-                
-                if (i == 0 || shortestPath.Count() > thisPath.Count()){
+                //Find shortest path
+                if ((shortestPath.Length == 0 || shortestPath.Count() > thisPath.Count()) && pathExists){
                     thisPath.Reverse();
                     shortestPath = thisPath.ToArray();
                 }
             }
-            int closestNode= shortestPath[1];
-            Console.WriteLine(closestNode + " " + agentNode);
             
+            //pick a link to sever
+            int closestNode= shortestPath[1];
+            for (int i = 0; i < links.Count() ; i++){
+                if (links[i].ContainsNode(closestNode) && links[i].ContainsNode(agentNode)){
+                    links.RemoveAt(i);
+                }
+            }
+            
+            Console.WriteLine(closestNode + " " + agentNode);
             //implementar para vários paths.
             //lidar caso nenhum path seja encontrado.
             //testar o path menor
@@ -105,32 +116,34 @@ class Player
     }
     
     class Link{
+        
         public int[] nodes = new int[2];
+        
         public Link (int node1, int node2){
             nodes[0] = node1;
             nodes[1] = node2;
         }
         
-        public bool TryGetNeighbours (int node, out int[] neighbours){
-            for (int i = 0; i < nodes.Length; i++){
-                if (nodes[i] == node){
-                    neighbours = GetNeighbours (node);
-                    return true;
-                }
+        public bool TryLink (int node, out int next){
+            if (nodes[0] == node){
+                next = nodes[1];
+                return true;
+            }else if (nodes[1] == node){
+                next = nodes[0];
+                return true;
             }
-            neighbours = new int[0];
+            next = 0;
             return false;
         }
         
-        public int[] GetNeighbours (int node){
-            List<int> output = new List<int>();
-            for (int i = 0; i < nodes.Length; i++){
-                if (nodes[i] != node){
-                    output.Add(nodes[i]);
-                }
+        public bool ContainsNode (int node){
+            if (this.nodes[0] == node || this.nodes[1] == node){
+                return true;
+            } else{
+                return false;
             }
-            return output.ToArray();
         }
         
     }
+    
 }

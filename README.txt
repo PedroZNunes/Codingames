@@ -4,5 +4,6 @@ Medium:
 shadows of the knight 1 - Intervals, Binary Search
 skynet 1 - BFS, Graphs
 dont panic 1 - Conditions
+War - Queues
 
 My profile: https://www.codingame.com/profile/f308c1108d00006b970d3b16490dd9ae2057591

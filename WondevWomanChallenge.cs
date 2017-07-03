@@ -355,7 +355,7 @@ class Player {
                     continue;
                 Node enemyNode = grid.GetNodeByPosition (enemyPos[i]);
                 if (moveTarget.IsAdjacentTo (enemyNode)) {
-                    moveScore += -20 * moveTarget.height;
+                    moveScore += -15 * moveTarget.height;
                 }
             }
 
@@ -492,7 +492,7 @@ class Player {
                 //mod for adjacent good neighbours
                 for (int i = 0 ; i < neighbours.Length ; i++) {
                     if (neighbours.Length == 0)
-                        continue;
+                        break;
 
                     if (neighbours[i].height <= playerNode.height + 1) {
                         buildScore += 2 * neighbours[i].height;

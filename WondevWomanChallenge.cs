@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.IO;
 using System.Text;
@@ -35,6 +35,8 @@ class Player {
     static private string outBuildDir = null;
     static private int finalIndex = 0;
     static private bool isPushing = false;
+
+    static private int MAX_NEIGHBOURS = 8;
 
     static void Main ( string[] args ) {
         //   string[] inputs;
@@ -343,19 +345,22 @@ class Player {
             else {
                 for (int i = 0 ; i < neighbours.Length ; i++) {
                     if (neighbours[i].height == moveTarget.height || neighbours[i].height == moveTarget.height + 1) {
-                        moveScore += (neighbours[i].height * neighbours[i].height);
+                        moveScore += 2 * ( neighbours[i].height * neighbours[i].height );
+                    }
+                    else {
+                        moveScore += neighbours[i].height * neighbours[i].height;
                     }
                 }
             }
 
-            //mod for avoid getting kicked out by the enemy when possible
+            //mod for avoiding getting kicked out by the enemy when possible
             //this should be very subtle
             for (int i = 0 ; i < enemyPos.Length ; i++) {
                 if (enemyPos[i] == new Vector2 (-1 , -1))
                     continue;
                 Node enemyNode = grid.GetNodeByPosition (enemyPos[i]);
                 if (moveTarget.IsAdjacentTo (enemyNode)) {
-                    moveScore += -15 * moveTarget.height;
+                    moveScore += -10 + (-10 * moveTarget.height);
                 }
             }
 
@@ -379,7 +384,7 @@ class Player {
 
             //mod to nerf pushes at height 0
             if (enemyNode.height == 0)
-                buildScore += -20;
+                buildScore += -10;
             pushDecomposed.AppendFormat ("{0} -> " , buildScore);
 
             bool isDampened = false;
@@ -409,10 +414,21 @@ class Player {
             }
             pushDecomposed.AppendFormat ("{0} -> " , buildScore);
 
+            //mod to put the enemy in awkward positions
+            Node[] landingNeighbours = grid.GetAllValidNeighbours (landingNode);
+            int count = 0;
+            for (int i = 0 ; i < landingNeighbours.Length ; i++) {
+                if (landingNeighbours[i].height <= landingNode.height + 1) {
+                    count++;
+                }
+            }
+            buildScore = 10 * (MAX_NEIGHBOURS - count);
+
             //mod to not sending the enemy to a better spot
             if (landingNode.height > enemyNode.height)
                 buildScore += -60;
             pushDecomposed.AppendFormat ("{0} -> " , buildScore);
+
             //mod to lock enemy up
             //this should be pretty strong as it can lock the enemy
             if (neighbours.Length <= 1) {
@@ -423,6 +439,7 @@ class Player {
         }
 
         else {
+            Node[] buildNeighbours = grid.GetAllValidNeighbours (buildTarget);
             if (buildTarget.height <= playerNode.height) {
                 if (buildTarget.height == 0) {
                     Node[] temp;
@@ -434,22 +451,37 @@ class Player {
                 else if (buildTarget.height == 1) {
                     Node[] temp;
                     if (grid.TryGetNeighboursByHeight (buildTarget , 3 , playerNode , out temp))
-                        buildScore = 20;
+                        buildScore = 50;
                     else
                         buildScore = 10;
                 }
                 else if (buildTarget.height == 2) {
                     if (CanBeStolen (buildTarget))
-                        buildScore = -40;
-                    else
-                        buildScore = 30;
+                        buildScore = -100;
+                    else {
+                        //test for visibility
+                        bool isVisible = false;
+                        for (int i = 0 ; i < playerUnits.Length ; i++) {
+                            if (buildTarget.IsAdjacentTo(playerUnits[i].node)) {
+                                buildScore = 40;
+                                isVisible = true;
+                            }
+                        }
+                        if (!isVisible)
+                            buildScore = -50;
+                    }
                 }
                 else {
                     if (CanBeStolen (buildTarget)) {
-                        buildScore = 80;
+                        buildScore = 100;
                     }
                     else {
-                        buildScore = -15 * neighbours.Length;
+                        //test if it is accessible
+                        for (int i = 0 ; i < buildNeighbours.Length ; i++) {
+                            if (buildNeighbours[i].height >= 2) {
+                                buildScore = 60;
+                            }
+                        }
                     }
                 }
 
@@ -480,11 +512,9 @@ class Player {
                         continue;
                     Node enemyNode = grid.GetNodeByPosition (enemyPos[i]);
                     if (buildTarget.IsAdjacentTo (enemyNode)) {
-                        if (buildTarget.height >= 1 && buildTarget.height <= enemyNode.height) {
+                        if (buildTarget.height <= enemyNode.height + 1) {
                             if (buildTarget.height < 3)
-                                buildScore += -5 * (buildTarget.height + 1);
-                            else
-                                buildScore += 15;
+                                buildScore += -15 + (-5 * (buildTarget.height + 1));
                         }
                     }
                 }

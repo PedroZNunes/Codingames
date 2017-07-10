@@ -10,6 +10,7 @@ Stock Exchange Losses - Conditions, Loops, Arrays
 
 Hard:
 Surface - BFS, Flood fill, Memoization, Recursion
+Labyrinth - Pathfinding, BFS
 
 Competitions:
 Wondev Woman Challenge - 250th/2,299

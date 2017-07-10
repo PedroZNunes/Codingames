@@ -40,35 +40,9 @@ class Solution {
             lakes.Add (FindLake (pos[i]));
         }
 
-        ///int n = 0;
-        ///for (int i = 0 ; i < NodesToTestCount ; i++) {
-        ///    if (n > 5) {
-        ///        n = 0;
-        ///        Console.Error.WriteLine ();
-        ///    }
-        ///    Console.Error.Write ("{0} s:{1} | " , pos[i].ToString () , lakes[i].Count);
-        ///    n++;
-        ///}
-        ///Console.Error.WriteLine ();
-
         for (int i = 0 ; i < NodesToTestCount ; i++) {
             Console.WriteLine (lakes[i].Count);
         }
-
-        Console.ReadKey ();
-        ///int[] expectedOut = new int[] {42,38,3,5,13,38,16,42,8,40,13,39,6,8,42,13,38,4,2,28,31,16,42,38,38,20,28,10,39,42,40,
-        ///    11,20,40,20,20,7,10,6,16,34,42,16,2,16,13,31,39,13,40,20,38,28,39,20,34,28,40,9,20,20,34,6,6,4,40,6,9,39,3,39,16,
-        ///    38,6,31,10,3,16,11,4,40,10,16,16,13,28,1,12,40,11,10,16,42,20,2,42,11,20,16,4
-        ///};
-        ///
-        ///for (int i = 0 ; i < NodesToTestCount ; i++) {
-        ///    int count = lakes[i].Count;
-        ///    if (count != expectedOut[i]) {
-        ///        Console.Error.WriteLine ("{0} expected, {1} found, index {2}", expectedOut[i], count, i);
-        ///        Console.ReadKey ();
-        ///    }
-        ///}
-
     }
 
     static private Vector2[] GetAllNeighbours ( Vector2 corePos ) {

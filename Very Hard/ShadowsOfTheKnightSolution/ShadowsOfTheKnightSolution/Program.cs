@@ -37,6 +37,10 @@ class Player {
         previousPos = currentPos;
         nextJumpPos = currentPos;
 
+        if (W <= 1) {
+            isXSet = true;
+        }
+
         Console.Error.WriteLine ("Grid Size {0}." , new Vector2 (W , H));
         // game loop
         while (true) {
@@ -44,6 +48,8 @@ class Player {
             string bombDir = Console.ReadLine(); // Current distance to the bomb compared to previous distance (COLDER, WARMER, SAME or UNKNOWN)
 
             Console.Error.WriteLine ("Starting turn. previousPos {0}, currentPos {1}, low {2}, high {3}, bombDirection {4}", previousPos, currentPos , low , high , bombDir);
+            if (low.x == high.x && !isXSet)
+                isXSet = true;
 
             if (!isXSet) {
                 Console.Error.WriteLine ("Working in X.");
@@ -51,37 +57,69 @@ class Player {
                     nextJumpPos.x = high.x - X0;
                     Console.Error.WriteLine ("Unknown. flipping x from {0} to {1}." , X0 , nextJumpPos.x);
                 } 
-                else { 
+                else {
+                    int tempPosX = 0;
                     if (bombDir == "WARMER") {
-                    if (currentPos.x > previousPos.x) {
-                        low.x = currentPos.x - (int) Math.Floor ((double) ( currentPos.x - ( previousPos.x + 1 ) ) / 2f);
-                    }
-                    else {
-                        high.x = currentPos.x + (int) Math.Floor ((double) ( previousPos.x - ( currentPos.x + 1 ) ) / 2f );
-                    }
-                }
-                else if (bombDir == "COLDER") {
-                    if (currentPos.x > previousPos.x) {
-                        high.x = previousPos.x + (int) Math.Floor ((double) ( currentPos.x - ( previousPos.x + 1 ) ) / 2f);
-                    }
-                    else {
-                        low.x = previousPos.x - (int) Math.Floor ((double) ( previousPos.x - ( currentPos.x + 1 ) ) / 2f);
-                    }
-                }
-                else if (bombDir == "SAME") {
-                    if (currentPos.x > previousPos.x) {
-                        high.x = currentPos.x;
-                        low.x = previousPos.x;
-                    }
-                    else {
-                        high.x = previousPos.x;
-                        low.x = currentPos.x;
-                    }
-                }
-             
-                    Console.Error.WriteLine ("Calculating NextJumpPos in X. low.x {0}, high.x {1}" , low.x , high.x);
+                        if (currentPos.x > previousPos.x) {
+                            tempPosX = currentPos.x - (int) Math.Floor ((double) ( currentPos.x - ( previousPos.x + 1 ) ) / 2f);
+                            if (tempPosX > low.x) {
+                                low.x = tempPosX;
+                            }
+                        }
+                        else {
+                            tempPosX = currentPos.x + (int) Math.Floor ((double) ( previousPos.x - ( currentPos.x + 1 ) ) / 2f);
+                            if (tempPosX < high.x) {
+                                high.x = tempPosX;
+                            }
+                        }
 
-                    nextJumpPos.x = low.x + ( high.x - low.x ) / 2;
+                    }
+                    else if (bombDir == "COLDER") {
+                        if (currentPos.x > previousPos.x) {
+                            tempPosX = previousPos.x + (int) Math.Floor ((double) ( currentPos.x - ( previousPos.x + 1 ) ) / 2f);
+                            if (tempPosX < high.x) {
+                                high.x = tempPosX;
+                            }
+                        }
+                        else {
+                            tempPosX = previousPos.x - (int) Math.Floor ((double) ( previousPos.x - ( currentPos.x + 1 ) ) / 2f);
+                            if (tempPosX > low.x) {
+                                low.x = tempPosX;
+                            }
+                        }
+                    }
+                    else if (bombDir == "SAME") {
+                        if (currentPos.x > previousPos.x) {
+                            high.x = currentPos.x;
+                            low.x = previousPos.x;
+                        }
+                        else {
+                            high.x = previousPos.x;
+                            low.x = currentPos.x;
+                        }
+                    }
+
+                    int mid = low.x + ( high.x - low.x ) / 2;
+                    Console.Error.WriteLine ("Calculating NextJumpPos in X. low.x {0}, high.x {1}" , low.x , high.x);
+                    //next jump should be not in the center, but a mirror of the last jump inside the area min-max
+                    //maybe I`ll have to store the relevant position for mirroring since the current position might be colder
+                    if (bombDir == "SAME") {
+                        nextJumpPos.x = mid;
+                    }
+                    else {
+                        int mirror = mid + ( mid - currentPos.x );
+                        nextJumpPos.x = mirror;
+                    }
+
+
+                    if (nextJumpPos.x >= W) {
+                        Console.Error.WriteLine ("batman tried to jump off the window in X. tried {0}, rounded to {1}" , nextJumpPos.x , high.x);
+                        nextJumpPos.x = high.x;
+                    } else if (nextJumpPos.x < 0) {
+                        Console.Error.WriteLine ("batman tried to jump beyond the search area in X. tried {0}, rounded to {1}" , nextJumpPos.x , low.x);
+                        nextJumpPos.x = low.x;
+                    }
+
                     if (nextJumpPos == currentPos) {
                         Console.Error.WriteLine ("jumping to the same window. {0} {1}" , nextJumpPos , currentPos);
                         if (nextJumpPos.x < high.x) {
@@ -93,7 +131,7 @@ class Player {
                     }
                     
                     if (low.x == high.x) {
-                        isXSet = true;
+                        nextJumpPos.x = low.x;
                     }
                 }
             }
@@ -113,6 +151,7 @@ class Player {
                         else {
                             high.y = currentPos.y + (int) Math.Floor ((double) ( previousPos.y - ( currentPos.y + 1 ) ) / 2f);
                         }
+                        previousPos = currentPos;
                     }
                     else if (bombDir == "COLDER") {
                         if (currentPos.y > previousPos.y) {
@@ -135,7 +174,26 @@ class Player {
 
                     Console.Error.WriteLine ("Calculating NextJumpPos in Y. low.y {0}, high.y {1}" , low.y , high.y);
 
-                    nextJumpPos.y = low.y + ( high.y - low.y ) / 2;
+                    int mid = low.y + ( high.y - low.y ) / 2;
+
+                    if (bombDir == "SAME") {
+                        nextJumpPos.y = mid;
+                    }
+                    else {
+                        nextJumpPos.y = mid + ( mid - currentPos.y );
+                    }
+
+                    if (nextJumpPos.y >= H) {
+                        //se a distancia do pulo ao centro nao for suficiente para diidir a zona em 2
+                        Console.Error.WriteLine ("batman tried to jump off the roof in Y. tried {0}, rounded to {1}" , nextJumpPos.y , high.y);
+                        nextJumpPos.y = high.y;
+                    }
+                    else if (nextJumpPos.y < 0) {
+                        Console.Error.WriteLine ("batman tried to go underground in Y. tried {0}, rounded to {1}" , nextJumpPos.y , low.y);
+                        nextJumpPos.y = low.y;
+                    }
+
+
                     if (nextJumpPos == currentPos) {
                         Console.Error.WriteLine ("jumping to the same window. {0} {1}" , nextJumpPos , currentPos);
                         if (nextJumpPos.y < high.y) {
@@ -145,6 +203,11 @@ class Player {
                             nextJumpPos.y--;
                         }
                     }
+
+                    if (low.y == high.y) {
+                        nextJumpPos.y = low.y;
+                    }
+                    
                 }
                   
             }
@@ -157,27 +220,6 @@ class Player {
             Console.WriteLine ("{0} {1}" , nextJumpPos.x , nextJumpPos.y);
         }
     }
-
-
-
-//    static private string RunBot ( int index ) {
-//        string output;
-//        if (index == bombIndex) {
-//            output = "DONE";
-//            Console.Error.WriteLine ("Bomb Found. {0}", index);
-//        }
-//        else if (Math.Abs (index - bombIndex) < Math.Abs (previousIndex - bombIndex)) {
-//            output = "WARMER";
-//        }
-//        else if (Math.Abs (index - bombIndex) > Math.Abs (previousIndex - bombIndex)) {
-//            output =  "COLDER";
-//        }
-//        else {
-//            output = "SAME";
-//        }
-        
-//        return output;
-//    }
 }
 
 

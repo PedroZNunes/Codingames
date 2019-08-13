@@ -3,76 +3,100 @@
  * the standard input according to the problem statement.
  **/
 
-
+ 
 class Hero {
 
-    constructor( position, direction, wall_side ) {
-        this.pos = [];
-        this.pos['x'] = position[0];
-        this.pos['y'] = position[1];
+    constructor( x, y, direction, wall_side ) {
+        this.x = x;
+        this.y = y;
 
         this.dir = direction;
         this.wall_side = wall_side;
+
+        this.has_moved = false;
     }
 
     get_position() {
-        var output = '(' + this.pos['x'] + ', ' + this.pos['y'] + ')';
+        var output = '(x:' + this.x + ', y:' + this.y + ')';
         return (output);
+    }
+
+    // segue a parede a menos que esteja cercado de paredes ou volte ao ponto inicial.
+    main() {
+        this.check_path();
+
+        while ( true ) {
+            // se voltou para o inicio
+            if ( this.has_moved && this.is_home() ) {
+                break;
+            } 
+
+            // se ta preso no primeiro tile
+            if ( ! this.has_moved && this.dir === ini_dir ){
+                break;
+            }
+
+            hero.check_path();
+            console.error( hero.get_position() );
+            console.error( '( %s, %s )', ini_pos_x, ini_pos_y);
+        }
+
     }
 
     check_path() {
         console.error( 'checking path. starting from: \nPosition: %s \nDirection: %s \n', this.get_position(), this.dir );
         // fazer o ai do boneco e atualizar o grid a cada passo do boneco
+        // se tem wall pro lado certo
         if ( this.check_for_wall( wall_side ) ) {
             console.error( 'Wall to the correct side, %s', wall_side );
-
-            if ( ! this.check_for_wall( ) ) {
+            
+            if ( ! this.check_for_wall( ) ) {   // se n tem parede na frente, anda reto
                 console.error( 'No wall ahead' );
                 this.walk();
             }
-            else { //wall ahead
+            else {  // se tem parede na frente, vira pro lado oposto ao lado que ele tem q grudar na parede
                 console.error( 'Wall ahead. Turning %s', opposite_side );
                 this.turn( opposite_side );
             }
-        } else { 
+        } else {    // se n tem parede pro lado q tem q ter, vira pra aquele lado e anda.
             console.error( 'No wall to follow. Turning %s and walking', opposite_side );
             this.turn( wall_side );
             this.walk();
         }
     }
     
+    // checka se tem parede pro lado indicado. no caso de nenhum parametro, checkar na frente.
     check_for_wall( side = 'f' ) {
         var wall_abs_direction;
         var wall_abs_direction_vector;
 
-        var next_pos;
+        var pos_to_check_x;
+        var pos_to_check_y;
 
-        if ( side === 'f' ) {
+        if ( side === 'f' ) { //se n tem parametro, manda um f de front pra saber que tem q olhar na frente.
             wall_abs_direction = this.dir;
-        } else {
+        } else {    // se tem parametro, usa a função de virar pra só olhar pro lado sem movimentar o boneco e pegar a parede.
             wall_abs_direction = this.turn( side, false );
         }
 
         wall_abs_direction_vector = get_direction_vector( wall_abs_direction );
         
-        next_pos = [];
+        pos_to_check_x = this.x + wall_abs_direction_vector[0];
+        pos_to_check_y = this.y + wall_abs_direction_vector[1];
 
-        next_pos['x'] = this.pos['x'] + wall_abs_direction_vector[0];
-        next_pos['y'] = this.pos['y'] + wall_abs_direction_vector[1];
-
-        console.error( 'checking for a wall to the %s of (%s, %s). Destination: (%s, %s)', wall_abs_direction, this.pos['x'], this.pos['y'], next_pos['x'], next_pos['y'] );
+        console.error( 'checking for a wall to the %s of (%s, %s). Destination: (%s, %s).', wall_abs_direction, this.x, this.y, pos_to_check_x, pos_to_check_y );
 
         // out of bounds
-        if (    (next_pos['x']  >=  width   )   ||
-                (next_pos['x']  <   0       )   ||
-                (next_pos['y']  >=  height  )   ||
-                (next_pos['y']  <   0       )
+        if (    (pos_to_check_x     >=  width   )   ||
+                (pos_to_check_x     <   0       )   ||
+                (pos_to_check_y     >=  height  )   ||
+                (pos_to_check_y     <   0       )
         ) {
             console.error( 'wall found. out of bounds' );
             return true;
         }
 
-        if ( grid[next_pos['x'], next_pos['y']] === '#' ) {
+        if ( grid[pos_to_check_y][pos_to_check_x] === '#' ) {
             console.error( 'wall found. real one' );
 
             return true;
@@ -83,19 +107,17 @@ class Hero {
         }
     }
 
+    // vira pro lado e pode ou não mover o pikachu, dependendo do segundo parâmetro. Isso é útil pra checkar as paredes pro lado.
     turn( rotation_dir, actually_move = true ) {
-        var dir = this.dir.toLowerCase();
+        let dir = (this.dir) ? this.dir.toLowerCase() : '';
         
         rotation_dir = (rotation_dir) ? rotation_dir.toLowerCase() : '';
-
-        if ( rotation_dir == dir ){
-            return dir;
-        }
 
         if ( rotation_dir === null || typeof( rotation_dir ) !== 'string' ){
             console.error( 'rotation_dir: %s \ntypeof: %s', rotation_dir, typeof( rotation_dir ) );
         }
 
+        // vira dependendo do lado da rotação, 'l'eft ou 'r'ight
         if ( rotation_dir === 'l' ) {
             switch ( dir ) {
                 case 'w':
@@ -136,10 +158,8 @@ class Hero {
             }
         }
 
-        if ( actually_move === true )
+        if ( actually_move !== false ){ // se for pra andar, a direção do boneco atualiza
             console.error( 'Turned %s, now facing %s', rotation_dir, dir );
-
-        if ( actually_move !== false ){
             this.dir = dir;
         }
 
@@ -150,32 +170,37 @@ class Hero {
         var direction = this.dir.toLowerCase();
         var direction_vector = get_direction_vector( direction );
         
-        var to_position = [];
-        to_position['x'] = this.pos['x'] + direction_vector[0];
-        to_position['y'] = this.pos['y'] + direction_vector[1];
+        var to_x = [];
+        var to_y = [];
+        to_x = this.x + direction_vector[0];
+        to_y = this.y + direction_vector[1];
 
-        to_position['x'] = to_position['x'];
-        to_position['y'] = this.pos['y'];
         console.error( 'current Position: %s', this.get_position() );
-        console.error( 'trying to walk towards position: (%s, %s)', to_position['x'].toString(), to_position['y'].toString() );
+        console.error( 'trying to walk towards position: (%s, %s)', to_x.toString(), to_y.toString() );
 
-        if ( (
-            to_position['x']    < 0         ||
-            to_position['x']    >=  width   ||
-            to_position['y']    < 0         ||
-            to_position['y']    >=  height ) 
-            ||
-            (grid[to_position['x'], to_position['y']] === '#' ) ) {
-            console.error( 'Tried walking inside a wall or outside of the map. \nDirection: %s \npos_final: (%s, %s)', direction, to_position['x'], to_position['y'] );
+        if ( (  to_x        <   0           ||
+                to_x        >=  width       ||
+                to_y        <   0           ||
+                to_y        >=  height )    ||
+                (grid[ to_y ][ to_x ] === '#' ) ) {
+            console.error( 'Tried walking inside a wall or outside of the map. \nDirection: %s \npos_final: (%s, %s)', direction, to_x, to_y );
         }
         else{
             console.error( 'Walking' );
             
-            this.pos = to_position;
+            this.x = to_x;
+            this.y = to_y;
             
-            grid[this.pos['x'], this.pos['y']]++;
+            grid[this.y] [this.x]++;
+
+            this.has_moved  =   true;
         }
     }
+
+    is_home(){
+        return( this.x === ini_pos_x && this.y === ini_pos_y);
+    }
+
 }
 
 
@@ -184,29 +209,43 @@ class Hero {
 
 
 
-var inputs = readline().split(' ');
-const width = parseInt(inputs[0]);
-const height = parseInt(inputs[1]);
+var inputs              =   readline().split(' ');
+const width             =   parseInt(inputs[0]);
+const height            =   parseInt(inputs[1]);
 
-var grid = [,]; //look for ways of recording maps... 
+var grid                =   []; //[][] sets positions for a place in memory. [,] sets 2 values that could be 2 positions, but they dont point to anywhere.
 
-var ini_pos;
+var ini_pos_x;
+var ini_pos_y;
+
 var ini_dir;
 
 var wall_side;
 var opposite_side;
 
 for ( let y = 0; y < height; y++ ) {
-    const row = readline();
-    console.error(row);
-    for ( let x = 0; x < width; x++ ) {
-        if (    row[x] == '<'   ||
-                row[x] == '^'   ||
-                row[x] == 'v'   ||
-                row[x] == '>'   ){
-            ini_pos = [x, y];
+    const row           =   readline();
+    console.error( row );
 
-            switch ( row[x] ) {
+    grid[y]             =   [];
+
+    for ( let x = 0; x < width; x++ ) {
+        let cell        =   row[x];
+
+        if ( cell === null ) {
+            console.error( 'empty cell' );
+            continue;
+        }
+
+        if (    cell == '<'   ||
+                cell == '^'   ||
+                cell == 'v'   ||
+                cell == '>'   )
+        {
+            ini_pos_x   =   x;
+            ini_pos_y   =   y;
+
+            switch ( cell ) {
                 case '<':
                     ini_dir = 'w';
                 break;
@@ -228,78 +267,52 @@ for ( let y = 0; y < height; y++ ) {
                 break;
             }
 
-            grid[x, y] = 1;
-            
+            grid[y][x]  =   0;
         } else {
-            grid[x, y] = row[x];
+            grid[y][x]  =   cell;
         }
     }
 }
 console.error('');
 
 // outputting grid
-
-for ( let y = 0; y < height; y++ ) {
-    let row = '';
-    for ( let x = 0; x < width; x++ ) {
-        console.error('x: %i, y: %i', x, y);
-        row += grid[x, y].toString();
-    }
-    console.error(row);
-}
-console.error('');
+console.error( get_the_grid() );
 
 
-const line = readline();
-wall_side = line[0];
-opposite_side = ( ( wall_side.toLowerCase == 'l' ) ? 'r' : 'l');
+const line              =   readline();
+wall_side               =   line[0];
+opposite_side           =   ( ( wall_side.toLowerCase() == 'l' ) ? 'r' : 'l' );
 
-hero = new Hero( ini_pos, ini_dir, wall_side );
+hero                    =   new Hero( ini_pos_x, ini_pos_y, ini_dir, wall_side );
 
-do {
-    hero.check_path();
-} while( this.pos['x'] !== ini_pos[0]   &&  this.pos['y'] !== ini_pos[1]);
+// main
+hero.main();
 
-console.log( 'after main' );
+console.error( 'after main' );
 
-// outputting 
-for ( let y = 0; y < height; y++ ) {
-    console.error( '\n' );        
-    var row = '';
-    for ( let x = 0; x < width; x++ ) {
-        console.error( grid[x, y] );        
-    }
-    console.log( row.toString() );
-}
+console.error(  get_the_grid() );
 
-for ( let y = 0; y <= height; y++ ) {
-    var row = '';
-    for ( let x = 0; x <= width; x++ ) {
-        row += grid[x, y];
-    }
-    console.log( row.toString() );
-}
+console.log(    get_the_grid() );
 
-//======================= end of main
 
 function get_direction_vector( dir ) {
-    dir = dir.toLowerCase();
-    movement = [];
+    dir                 =   dir.toLowerCase();
+    movement            =   [0,0];
     switch( dir.toLowerCase() ) {
         case 'w':
-            movement = [-1, 0];
+            movement    =   [-1, 0];
             break;
     
         case 'n':
-            movement = [0, -1];
+            movement    =   [0, -1];
             break;
 
         case 'e':
-            movement = [1, 0];
+            movement    =   [1, 0];
             break;
         
         case 's':
-            movement = [0, 1];
+            movement    =   [0, 1];
             break;
 
         default:
@@ -307,4 +320,15 @@ function get_direction_vector( dir ) {
     }
     return movement;
 }
+
+function get_the_grid() {
+    let out     =   '';
+    for ( let y = 0; y < height; y++ ) {
+        out             +=  grid[y].join('');
+        out             +=  '\n';
+    }
+
+    return out;
+}
+
 
